@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+      - name: Install dependencies
+        run: uv sync
+      - name: Lint check
+        run: uv run python -c "import backend.main; print('✅ backend imports OK')"
+      - name: Test imports
+        run: |
+          uv run python -c "
+          from backend.config import settings
+          from backend.llm import get_groq_client, get_openai_client
+          from backend.routers import chat, health, models
+          print('✅ All imports OK')
+          print(f'  model_fast={settings.model_fast}')
+          print(f'  model_powerful={settings.model_powerful}')
+          "
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install
+        run: npm install
+      - name: Build
+        run: npm run build
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:8000
