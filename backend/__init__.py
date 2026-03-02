@@ -1,1 +1,0 @@
-"""OpenAI Hackathon backend package."""

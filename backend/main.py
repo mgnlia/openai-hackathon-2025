@@ -1,31 +1,13 @@
-"""OpenAI Hackathon — FastAPI backend with gpt-oss-20b/120b via Groq."""
-from __future__ import annotations
-
-import os
-from contextlib import asynccontextmanager
-from typing import AsyncIterator
-
-from dotenv import load_dotenv
+"""DocAgent — FastAPI backend."""
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
-load_dotenv()
-
-from backend.routers import chat, models, health  # noqa: E402
-
-
-@asynccontextmanager
-async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-    print("🚀 OpenAI Hackathon API starting — gpt-oss models ready")
-    yield
-    print("👋 Shutting down")
-
+from backend.routers import health, chat, models
+from backend.routers.documents import router as documents_router
 
 app = FastAPI(
-    title="OpenAI Hackathon API",
-    description="gpt-oss-20b and gpt-oss-120b powered application via Groq",
-    version="0.1.0",
-    lifespan=lifespan,
+    title="DocAgent API",
+    description="Local-first AI document analyst powered by gpt-oss-20b via Groq",
+    version="1.0.0",
 )
 
 app.add_middleware(
@@ -36,6 +18,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(health.router, tags=["health"])
+app.include_router(health.router, prefix="/health", tags=["health"])
 app.include_router(chat.router, prefix="/api", tags=["chat"])
 app.include_router(models.router, prefix="/api", tags=["models"])
+app.include_router(documents_router, prefix="/api", tags=["documents"])
+
+@app.get("/")
+async def root():
+    return {
+        "name": "DocAgent",
+        "description": "Local-first AI document analyst powered by gpt-oss-20b",
+        "models": ["openai/gpt-oss-20b", "openai/gpt-oss-120b"],
+        "docs": "/docs",
+    }
